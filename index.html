@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>강의 첫날 피드백 분석 도구</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+            background: linear-gradient(to bottom right, #eff6ff, #eef2ff);
+            min-height: 100vh;
+            padding: 1.5rem;
+        }
+        
+        .container {
+            max-width: 80rem;
+            margin: 0 auto;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .header svg {
+            width: 2rem;
+            height: 2rem;
+            color: #4f46e5;
+            flex-shrink: 0;
+        }
+        
+        h1 {
+            font-size: 1.875rem;
+            font-weight: bold;
+            color: #1f2937;
+        }
+        
+        .alert {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .alert svg {
+            width: 1.25rem;
+            height: 1.25rem;
+            color: #3b82f6;
+            flex-shrink: 0;
+            margin-top: 0.125rem;
+        }
+        
+        .alert p {
+            font-size: 0.875rem;
+            color: #1e3a8a;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        
+        .label-sm {
+            font-size: 0.75rem;
+            color: #4b5563;
+            margin-bottom: 0.25rem;
+        }
+        
+        input[type="text"],
+        input[type="date"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        
+        .dropzone {
+            border: 2px dashed #d1d5db;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .dropzone:hover {
+            border-color: #6366f1;
+        }
+        
+        .dropzone.drag-over {
+            border-color: #4f46e5;
+            background: #eef2ff;
+        }
+        
+        .dropzone.uploaded {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+        
+        .dropzone svg {
+            width: 3rem;
+            height: 3rem;
+            color: #9ca3af;
+            margin: 0 auto 0.5rem;
+            display: block;
+        }
+        
+        .upload-icon {
+            width: 3rem;
+            height: 3rem;
+            background: #10b981;
+            border-radius: 50%;
+            padding: 0.5rem;
+            color: white;
+            margin: 0 auto 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .upload-icon svg {
+            width: 1.5rem;
+            height: 1.5rem;
+            color: white;
+            margin: 0;
+        }
+        
+        .dropzone p {
+            font-size: 0.875rem;
+            color: #4b5563;
+            margin: 0.25rem 0;
+        }
+        
+        .dropzone.uploaded p.main {
+            color: #15803d;
+            font-weight: 500;
+        }
+        
+        .dropzone p.filename {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+        
+        .remove-btn {
+            margin-top: 0.75rem;
+            font-size: 0.75rem;
+            color: #dc2626;
+            text-decoration: underline;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .remove-btn:hover {
+            color: #b91c1c;
+        }
+        
+        .date-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+            cursor: pointer;
+        }
+        
+        input[type="checkbox"] {
+            width: 1rem;
+            height: 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.25rem;
+            cursor: pointer;
+        }
+        
+        .btn-primary {
+            width: 100%;
+            background: #4f46e5;
+            color: white;
+            padding: 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: background 0.3s;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: #4338ca;
+        }
+        
+        .btn-primary:disabled {
+            background: #d1d5db;
+            cursor: not-allowed;
+        }
+        
+        .btn-primary svg {
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .result-header h2 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-secondary {
+            padding: 0.5rem 1rem;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-secondary:hover {
+            background: #4338ca;
+        }
+        
+        .result-section {
+            margin-top: 2rem;
+        }
+        
+        .gradient-header {
+            background: linear-gradient(to right, #4f46e5, #7c3aed);
+            color: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            margin-bottom: 2rem;
+        }
+        
+        .gradient-header h2 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .gradient-header p {
+            color: #c7d2fe;
+            line-height: 1.625;
+        }
+        
+        .info-card {
+            background: white;
+            border: 2px solid #e0e7ff;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .info-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .icon-circle {
+            width: 3rem;
+            height: 3rem;
+            background: #e0e7ff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .icon-circle svg {
+            width: 1.5rem;
+            height: 1.5rem;
+            color: #4f46e5;
+        }
+        
+        .info-card h3 {
+            font-size: 1.125rem;
+            font-weight: bold;
+            color: #1f2937;
+        }
+        
+        .big-number {
+            font-size: 1.875rem;
+            font-weight: bold;
+            color: #4f46e5;
+        }
+        
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .section-title svg {
+            width: 1.5rem;
+            height: 1.5rem;
+            color: #4f46e5;
+        }
+        
+        .subsection {
+            margin-bottom: 2rem;
+        }
+        
+        .subsection:last-child {
+            margin-bottom: 0;
+        }
+        
+        .subsection h4 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.75rem;
+        }
+        
+        .data-box {
+            background: #f9fafb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .data-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .data-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .data-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #4b5563;
+        }
+        
+        .data-value {
+            font-size: 1.125rem;
+            font-weight: bold;
+            color: #4f46e5;
+        }
+        
+        .data-text {
+            font-size: 0.875rem;
+            color: #374151;
+        }
+        
+        .evaluation-box {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        
+        .evaluation-box p {
+            font-size: 0.875rem;
+            color: #1e3a8a;
+        }
+        
+        .feedback-card {
+            border-left: 4px solid;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .feedback-card:last-child {
+            margin-bottom: 0;
+        }
+        
+        .feedback-card.positive {
+            background: #f0fdf4;
+            border-color: #10b981;
+        }
+        
+        .feedback-card.neutral {
+            background: #f9fafb;
+            border-color: #9ca3af;
+        }
+        
+        .feedback-card.info {
+            background: #eff6ff;
+            border-color: #3b82f6;
+        }
+        
+        .feedback-card h5 {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .feedback-card.positive h5 {
+            color: #15803d;
+        }
+        
+        .feedback-card.neutral h5 {
+            color: #1f2937;
+        }
+        
+        .feedback-card.info h5 {
+            color: #1e40af;
+        }
+        
+        .feedback-card p {
+            font-size: 0.875rem;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        
+        .feedback-card p:last-child {
+            margin-bottom: 0;
+        }
+        
+        .feedback-card.positive p:last-child {
+            color: #15803d;
+        }
+        
+        .feedback-card.neutral p:last-child {
+            color: #1f2937;
+        }
+        
+        .feedback-card.info p:last-child {
+            color: #1e40af;
+        }
+        
+        .feedback-card em {
+            font-style: italic;
+        }
+        
+        .summary-card {
+            background: linear-gradient(to bottom right, #faf5ff, #ede9fe);
+            border: 2px solid #d8b4fe;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .summary-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .summary-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .summary-section h4 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+        
+        .summary-section.strengths h4 {
+            color: #15803d;
+        }
+        
+        .summary-section.maintain h4 {
+            color: #1e40af;
+        }
+        
+        .summary-section.suggestions h4 {
+            color: #7c3aed;
+        }
+        
+        .bullet-list {
+            list-style: none;
+        }
+        
+        .bullet-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .bullet-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .bullet-item span:first-child {
+            margin-top: 0.25rem;
+        }
+        
+        .summary-section.strengths .bullet-item span:first-child {
+            color: #10b981;
+        }
+        
+        .summary-section.maintain .bullet-item span:first-child {
+            color: #3b82f6;
+        }
+        
+        .summary-section.suggestions .bullet-item span:first-child {
+            color: #7c3aed;
+        }
+        
+        .closing-card {
+            background: white;
+            border: 2px solid #e0e7ff;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        
+        .closing-card p {
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        
+        .closing-card .highlight {
+            color: #4f46e5;
+            font-weight: 600;
+        }
+        
+        .closing-card .thanks {
+            color: #6b7280;
+            margin-top: 1rem;
+            margin-bottom: 0;
+        }
+        
+        .notice {
+            font-size: 0.875rem;
+            color: #92400e;
+            background: #fef3c7;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #fde68a;
+            margin-top: 1.5rem;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        @media print {
+            body {
+                background: white;
+            }
+            .card:first-child {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 입력 폼 -->
+        <div class="card">
+            <div class="header">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                </svg>
+                <h1>강의 첫날 피드백 분석 도구</h1>
+            </div>
+            
+            <div class="alert">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p>Google Forms 설문 결과 PDF를 업로드하면 자동으로 분석하여 강사님께 보낼 이메일 내용을 생성합니다.</p>
+            </div>
+
+            <div class="form-group">
+                <label>PDF 파일 업로드 *</label>
+                <div id="dropzone" class="dropzone">
+                    <input type="file" id="pdfInput" accept=".pdf" style="display: none;">
+                    <div id="uploadContent">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                        </svg>
+                        <p>클릭하거나 PDF 파일을 드래그하세요</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>강의명 (자동 입력됨)</label>
+                <input type="text" id="lectureName" placeholder="PDF 파일명에서 자동으로 추출됩니다">
+            </div>
+
+            <div class="form-group">
+                <label>강사 이름 *</label>
+                <input type="text" id="instructorName" placeholder="예: 홍길동">
+            </div>
+
+            <div class="form-group">
+                <label>강의 기간 *</label>
+                <div class="date-grid">
+                    <div>
+                        <label class="label-sm">시작일</label>
+                        <input type="date" id="startDate">
+                    </div>
+                    <div>
+                        <label class="label-sm">종료일</label>
+                        <input type="date" id="endDate">
+                    </div>
+                </div>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="saturdayOnly">
+                    <label style="margin: 0; font-weight: normal;">토요일만 진행 (격주 과정)</label>
+                </div>
+            </div>
+
+            <button id="analyzeBtn" class="btn-primary">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                </svg>
+                피드백 분석 및 이메일 생성
+            </button>
+        </div>
+
+        <!-- 결과 출력 영역 -->
+        <div id="resultSection" class="card hidden">
+            <div class="result-header">
+                <h2>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1.5rem; height: 1.5rem;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    강의 피드백 분석 결과
+                </h2>
+                <button id="printBtn" class="btn-secondary">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1rem; height: 1rem;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    인쇄하기 (PDF 저장)
+                </button>
+            </div>
+            
+            <div id="resultContent"></div>
+            
+            <div class="notice">
+                💡 <strong>저장 방법:</strong><br>
+                • <strong>PDF 저장:</strong> 위 "인쇄하기" 버튼 클릭 → 대상을 "PDF로 저장" 선택<br>
+                • <strong>이미지 저장:</strong> 화면 캡처 도구 사용 (Windows: Win+Shift+S, Mac: Cmd+Shift+4)
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let pdfFile = null;
+
+        // PDF 업로드 처리
+        const dropzone = document.getElementById('dropzone');
+        const pdfInput = document.getElementById('pdfInput');
+        const uploadContent = document.getElementById('uploadContent');
+
+        dropzone.addEventListener('click', () => pdfInput.click());
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('drag-over');
+        });
+
+        dropzone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('drag-over');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            handleFileUpload(file);
+        });
+
+        pdfInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            handleFileUpload(file);
+        });
+
+        function handleFileUpload(file) {
+            if (file && file.type === 'application/pdf') {
+                pdfFile = file;
+                const fileName = file.name.replace('.pdf', '').trim();
+                document.getElementById('lectureName').value = fileName;
+                
+                // 업로드 성공 표시
+                dropzone.classList.add('uploaded');
+                uploadContent.innerHTML = `
+                    <div class="upload-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </div>
+                    <p class="main">✓ 파일 업로드 완료</p>
+                    <p class="filename">${file.name}</p>
+                    <button onclick="removeFile(event)" class="remove-btn">파일 제거</button>
+                `;
+            } else {
+                alert('PDF 파일만 업로드 가능합니다.');
+            }
+        }
+
+        function removeFile(e) {
+            e.stopPropagation();
+            pdfFile = null;
+            document.getElementById('lectureName').value = '';
+            dropzone.classList.remove('uploaded');
+            uploadContent.innerHTML = `
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                <p>클릭하거나 PDF 파일을 드래그하세요</p>
+            `;
+        }
+
+        // 분석 실행
+        document.getElementById('analyzeBtn').addEventListener('click', async () => {
+            const lectureName = document.getElementById('lectureName').value;
+            const instructorName = document.getElementById('instructorName').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            if (!pdfFile || !instructorName || !startDate || !endDate) {
+                alert('모든 필드를 입력해주세요.');
+                return;
+            }
+
+            // 분석 중 표시
+            const btn = document.getElementById('analyzeBtn');
+            btn.disabled = true;
+            btn.innerHTML = '분석 중...';
+
+            // 시뮬레이션: 1.5초 후 결과 표시
+            setTimeout(() => {
+                generateResult(lectureName, instructorName, startDate, endDate);
+                btn.disabled = false;
+                btn.innerHTML = `
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1.25rem; height: 1.25rem;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    피드백 분석 및 이메일 생성
+                `;
+                document.getElementById('resultSection').classList.remove('hidden');
+                document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+            }, 1500);
+        });
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        function getSaturdays(startDate, endDate) {
+            const saturdays = [];
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            
+            let current = new Date(start);
+            while (current <= end) {
+                if (current.getDay() === 6) {
+                    saturdays.push(formatDate(current));
+                }
+                current.setDate(current.getDate() + 1);
+            }
+            return saturdays;
+        }
+
+        function generateResult(lectureName, instructorName, startDate, endDate) {
+            const isSaturdayOnly = document.getElementById('saturdayOnly').checked;
+            const formattedStartDate = formatDate(startDate);
+            const formattedEndDate = formatDate(endDate);
+            
+            let periodText;
+            if (isSaturdayOnly) {
+                const saturdays = getSaturdays(startDate, endDate);
+                periodText = saturdays.join(', ') + ' (매주 토요일)';
+            } else {
+                periodText = `${formattedStartDate} ~ ${formattedEndDate}`;
+            }
+
+            // 샘플 데이터
+            const data = {
+                respondents: 16,
+                speed: { avg: 3.0, distribution: [0, 1, 14, 1, 0] },
+                difficulty: { avg: 3.0, distribution: [0, 2, 12, 2, 0] }
+            };
+
+            const html = `
+                <div style="margin-bottom: 2rem;">
+                    <div class="gradient-header">
+                        <h2>${instructorName} 강사님께</h2>
+                        <p>
+                            ${periodText}에 진행되는 "${lectureName}" 강의<br/>
+                            첫날(${formattedStartDate}) 교육생 피드백 결과를 전달드립니다.
+                        </p>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-card-header">
+                            <div class="icon-circle">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3>전체 응답 현황</h3>
+                                <p class="big-number">${data.respondents}명</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <h3 class="section-title">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                            </svg>
+                            정량 분석
+                        </h3>
+                        
+                        <div class="subsection">
+                            <h4>1. 강의 진행 속도 적정성</h4>
+                            <div class="data-box">
+                                <div class="data-text">
+                                    <span class="data-label">응답 분포:</span> 매우 느림(0%) | 느림(${((data.speed.distribution[1]/data.respondents)*100).toFixed(1)}%) | 적정(${((data.speed.distribution[2]/data.respondents)*100).toFixed(1)}%) | 빠름(${((data.speed.distribution[3]/data.respondents)*100).toFixed(1)}%) | 매우 빠름(0%)
+                                </div>
+                            </div>
+                            <div class="evaluation-box">
+                                <p><strong>평가:</strong> 교육생의 ${((data.speed.distribution[2]/data.respondents)*100).toFixed(0)}%가 '적정'으로 응답하여 매우 우수한 페이스 조절을 보여주셨습니다.</p>
+                            </div>
+                        </div>
+
+                        <div class="subsection">
+                            <h4>2. 강의 난이도 적정성</h4>
+                            <div class="data-box">
+                                <div class="data-text">
+                                    <span class="data-label">응답 분포:</span> 매우 쉬움(0%) | 쉬움(${((data.difficulty.distribution[1]/data.respondents)*100).toFixed(1)}%) | 적정(${((data.difficulty.distribution[2]/data.respondents)*100).toFixed(1)}%) | 어려움(${((data.difficulty.distribution[3]/data.respondents)*100).toFixed(1)}%) | 매우 어려움(0%)
+                                </div>
+                            </div>
+                            <div class="evaluation-box">
+                                <p><strong>평가:</strong> 전체의 ${((data.difficulty.distribution[2]/data.respondents)*100).toFixed(0)}%가 적정 난이도로 평가했으며, 일부 교육생은 약간 쉽거나 어렵다고 느낀 것으로 보입니다.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <h3 class="section-title">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                            정성 분석
+                        </h3>
+
+                        <div class="subsection">
+                            <h4>3. 불편 사항 및 요청 사항 <span style="font-size: 0.875rem; color: #6b7280; font-weight: normal;">(응답 4건)</span></h4>
+                            
+                            <div class="feedback-card positive">
+                                <h5>✓ 긍정적 피드백</h5>
+                                <p><em>"현실 업무 환경을 반영해서 설명해주셔서 이해가 잘됐습니다"</em></p>
+                                <p>→ 실무 중심의 설명이 교육생들의 이해도를 크게 높인 것으로 보입니다. 이는 강사님의 핵심 강점으로, 계속 유지해주시면 좋겠습니다.</p>
+                            </div>
+
+                            <div class="feedback-card neutral">
+                                <h5>개선 필요 사항</h5>
+                                <p>특별한 불편 사항 없음 (대부분 "없습니다", "없음"으로 응답)</p>
+                                <p>→ 첫날 강의 진행에 있어 교육생들이 느끼는 불편함이 거의 없었습니다.</p>
+                            </div>
+                        </div>
+
+                        <div class="subsection">
+                            <h4>4. 기타 의견 <span style="font-size: 0.875rem; color: #6b7280; font-weight: normal;">(응답 3건)</span></h4>
+                            
+                            <div class="feedback-card info">
+                                <p><em>"내용에 도움이 많이 되었습니다"</em></p>
+                                <p>→ 강의 내용의 실용성과 유용성이 높게 평가되었습니다.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="summary-card">
+                        <h3 class="section-title" style="margin-bottom: 1.5rem;">✨ 종합 평가 및 제안</h3>
+
+                        <div class="summary-section strengths">
+                            <h4>강점</h4>
+                            <div class="bullet-list">
+                                <div class="bullet-item">
+                                    <span>✓</span>
+                                    <span>진행 속도와 난이도 조절이 매우 적절함</span>
+                                </div>
+                                <div class="bullet-item">
+                                    <span>✓</span>
+                                    <span>실무 중심 설명으로 교육생의 높은 이해도 확보</span>
+                                </div>
+                                <div class="bullet-item">
+                                    <span>✓</span>
+                                    <span>내용의 실용성과 유용성이 우수함</span>
+                                </div>
+                                <div class="bullet-item">
+                                    <span>✓</span>
+                                    <span>전반적으로 매우 만족도 높은 첫날 강의 진행</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="summary-section maintain">
+                            <h4>유지하면 좋은 점</h4>
+                            <div class="bullet-list">
+                                <div class="bullet-item">
+                                    <span>•</span>
+                                    <span>현재의 페이스와 난이도 수준 유지</span>
+                                </div>
+                                <div class="bullet-item">
+                                    <span>•</span>
+                                    <span>실무 사례 중심의 설명 방식 지속</span>
+                                </div>
+                                <div class="bullet-item">
+                                    <span>•</span>
+                                    <span>교육생 눈높이에 맞춘 커뮤니케이션 스타일</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="summary-section suggestions">
+                            <h4>다음 강의일 제안</h4>
+                            <div class="bullet-list">
+                                <div class="bullet-item">
+                                    <span>•</span>
+                                    <span>현재 방식을 그대로 유지하면서 진행하시면 됩니다</span>
+                                </div>
+                                <div class="bullet-item">
+                                    <span>•</span>
+                                    <span>일부 교육생이 난이도를 쉽게/어렵게 느낀 점을 고려하여, 필요시 이론-실습의 균형을 미세 조정해보시는 것도 좋겠습니다</span>
+                                </div>
+                                <div class="bullet-item">
+                                    <span>•</span>
+                                    <span>주관식 응답이 상대적으로 적은 편이므로, 쉬는 시간이나 강의 중간에 "궁금한 점 있으신가요?" 등의 질문으로 교육생들의 참여를 더 독려해보시면 좋을 것 같습니다</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="closing-card">
+                        <p>첫날 강의 수고 많으셨습니다.</p>
+                        <p>전반적으로 매우 우수한 평가를 받으셨으며, 교육생들의 만족도가 높습니다.</p>
+                        <p class="highlight">남은 강의도 좋은 결과 있으시길 바랍니다.</p>
+                        <p class="thanks">감사합니다.</p>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('resultContent').innerHTML = html;
+        }
+
+        function handleSave() {
+            alert('브라우저 인쇄 기능이 열립니다.\n\n인쇄 대화상자에서:\n• "대상"을 "PDF로 저장"으로 선택하여 PDF 파일로 저장하거나\n• 화면 캡처 도구(Windows: Win+Shift+S, Mac: Cmd+Shift+4)로 이미지 저장할 수 있습니다.');
+            window.print();
+        }
+    </script>
+</body>
+</html>
