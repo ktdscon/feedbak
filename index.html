@@ -4,18 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>강의 첫날 피드백 분석 도구</title>
-    <script>
-        // Tailwind CDN 경고 메시지 숨기기
-        const originalWarn = console.warn;
-        console.warn = function(...args) {
-            if (args[0]?.includes && args[0].includes('cdn.tailwindcss.com')) {
-                return;
-            }
-            originalWarn.apply(console, args);
-        };
-    </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 <body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-6">
     <div class="max-w-5xl mx-auto">
@@ -88,9 +77,20 @@
                     </div>
                 </div>
 
-                <button onclick="analyzeFeedback()" class="w-full bg-indigo-600 text-white py-4 rounded-lg font-semibold hover:bg-indigo-700">
+                <button id="analyzeBtn" onclick="analyzeFeedback()" class="w-full bg-indigo-600 text-white py-4 rounded-lg font-semibold hover:bg-indigo-700 transition-all">
                     피드백 분석 및 이메일 생성
                 </button>
+                
+                <!-- 로딩 표시 -->
+                <div id="loadingArea" class="hidden mt-4 bg-blue-50 border border-blue-200 rounded-lg p-6">
+                    <div class="flex items-center gap-4">
+                        <div class="animate-spin rounded-full h-10 w-10 border-4 border-blue-200 border-t-blue-600"></div>
+                        <div>
+                            <p id="loadingText" class="text-blue-900 font-semibold text-lg">분석 중...</p>
+                            <p class="text-blue-700 text-sm mt-1">잠시만 기다려주세요</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -155,60 +155,6 @@
             document.getElementById('lectureName').value = '';
         }
 
-        async function downloadAsPNG() {
-            // html2canvas가 로드되었는지 확인
-            if (typeof html2canvas === 'undefined') {
-                alert('이미지 생성 라이브러리를 로딩 중입니다. 잠시 후 다시 시도해주세요.');
-                return;
-            }
-
-            const resultArea = document.getElementById('resultArea');
-            
-            // 로딩 표시
-            const loadingDiv = document.createElement('div');
-            loadingDiv.className = 'fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-50';
-            loadingDiv.innerHTML = '<div class="bg-white p-6 rounded-lg"><div class="text-center"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div><p class="text-gray-700">PNG 이미지 생성 중...</p></div></div>';
-            document.body.appendChild(loadingDiv);
-
-            // 약간의 딜레이를 주어 로딩 화면이 표시되도록
-            setTimeout(async () => {
-                try {
-                    // html2canvas로 캡처
-                    const canvas = await html2canvas(resultArea, {
-                        scale: 2,
-                        backgroundColor: '#ffffff',
-                        logging: false,
-                        useCORS: true,
-                        allowTaint: true,
-                        foreignObjectRendering: false
-                    });
-
-                    // PNG로 변환 및 다운로드
-                    canvas.toBlob(function(blob) {
-                        if (blob) {
-                            const url = URL.createObjectURL(blob);
-                            const link = document.createElement('a');
-                            const lectureName = document.getElementById('lectureName').value || '강의피드백';
-                            const instructorName = document.getElementById('instructorName').value || '강사님';
-                            link.download = `${lectureName}_${instructorName}_피드백분석.png`;
-                            link.href = url;
-                            link.click();
-                            URL.revokeObjectURL(url);
-                        } else {
-                            alert('PNG 생성에 실패했습니다.');
-                        }
-                        
-                        // 로딩 제거
-                        document.body.removeChild(loadingDiv);
-                    }, 'image/png');
-                } catch (error) {
-                    console.error('PNG 생성 오류:', error);
-                    alert('PNG 생성 중 오류가 발생했습니다. PDF 저장 버튼을 이용해주세요.');
-                    document.body.removeChild(loadingDiv);
-                }
-            }, 100);
-        }
-
         async function analyzeFeedback() {
             const pdfFile = document.getElementById('pdfFile').files[0];
             const lectureName = document.getElementById('lectureName').value;
@@ -222,6 +168,19 @@
                 return;
             }
 
+            // 버튼 비활성화 및 로딩 표시
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const loadingArea = document.getElementById('loadingArea');
+            const loadingText = document.getElementById('loadingText');
+            const resultArea = document.getElementById('resultArea');
+            
+            analyzeBtn.disabled = true;
+            analyzeBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            loadingArea.classList.remove('hidden');
+            resultArea.classList.add('hidden');
+            
+            loadingText.textContent = 'PDF 읽는 중...';
+
             // PDF를 Base64로 변환
             const reader = new FileReader();
             reader.readAsDataURL(pdfFile);
@@ -230,6 +189,8 @@
                 const base64Data = reader.result.split(',')[1];
                 
                 try {
+                    loadingText.textContent = 'AI 분석 중... (30초~1분 소요)';
+                    
                     const response = await fetch('https://api.anthropic.com/v1/messages', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -254,11 +215,20 @@
                     const jsonMatch = content.match(/\{[\s\S]*\}/);
                     
                     if (jsonMatch) {
+                        loadingText.textContent = '결과 정리 중...';
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        
                         const data = JSON.parse(jsonMatch[0]);
                         displayResult(data, lectureName, instructorName, startDate, endDate, saturdayOnly);
+                        
+                        loadingArea.classList.add('hidden');
                     }
                 } catch (error) {
+                    loadingArea.classList.add('hidden');
                     alert('PDF 분석 중 오류가 발생했습니다: ' + error.message);
+                } finally {
+                    analyzeBtn.disabled = false;
+                    analyzeBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                 }
             };
         }
@@ -332,20 +302,9 @@
             const html = `
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-2xl font-bold text-indigo-600">강의 피드백 분석 결과</h2>
-                    <div class="flex gap-2">
-                        <button onclick="downloadAsPNG()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            PNG 다운로드
-                        </button>
-                        <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                            </svg>
-                            PDF 저장
-                        </button>
-                    </div>
+                    <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">
+                        PDF로 저장
+                    </button>
                 </div>
                 
                 <div class="space-y-8">
@@ -382,51 +341,43 @@
                         <!-- 진행 속도 -->
                         <div class="mb-8">
                             <h4 class="text-lg font-semibold text-gray-700 mb-3">1. 강의 진행 속도 적정성</h4>
-                            
-                            <!-- 응답 분포 시각화 (통합 막대) -->
-                            <div class="bg-gray-50 rounded-lg p-5 mb-3">
-                                <!-- 라벨과 수치 -->
-                                <div class="grid grid-cols-5 gap-2 mb-2">
-                                    <div class="text-center">
-                                        <div class="text-xs font-medium text-gray-600 mb-1">매우 느림</div>
-                                        <div class="text-sm font-bold text-gray-700">${data.speed.distribution[0]}명</div>
-                                        <div class="text-xs text-gray-500">${((data.speed.distribution[0]/data.respondents)*100).toFixed(1)}%</div>
+                            <div class="bg-gray-50 rounded-lg p-4 space-y-4">
+                                <!-- 시각적 막대 그래프 -->
+                                <div class="relative">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="text-xs text-gray-500 w-16">매우 느림</span>
+                                        <div class="flex-1 h-8 rounded-lg relative overflow-hidden" style="background: linear-gradient(to right, #3b82f6 0%, #60a5fa 20%, #22c55e 40%, #22c55e 60%, #fb923c 80%, #ef4444 100%);">
+                                            <div class="absolute inset-0 flex">
+                                                <div style="width: 20%" class="border-r-2 border-white"></div>
+                                                <div style="width: 20%" class="border-r-2 border-white"></div>
+                                                <div style="width: 20%" class="border-r-2 border-white"></div>
+                                                <div style="width: 20%" class="border-r-2 border-white"></div>
+                                                <div style="width: 20%"></div>
+                                            </div>
+                                            <!-- 점수 마커 -->
+                                            <div style="position: absolute; left: ${((data.speed.avg - 1) / 4) * 100}%; top: 0; bottom: 0; width: 3px; background: #1e40af; z-index: 10;">
+                                                <div style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 8px solid #1e40af;"></div>
+                                                <div style="position: absolute; top: -28px; left: 50%; transform: translateX(-50%); background: #1e40af; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; white-space: nowrap;">${data.speed.avg.toFixed(1)}점</div>
+                                            </div>
+                                        </div>
+                                        <span class="text-xs text-gray-500 w-16 text-right">매우 빠름</span>
                                     </div>
-                                    <div class="text-center">
-                                        <div class="text-xs font-medium text-gray-600 mb-1">느림</div>
-                                        <div class="text-sm font-bold text-gray-700">${data.speed.distribution[1]}명</div>
-                                        <div class="text-xs text-gray-500">${((data.speed.distribution[1]/data.respondents)*100).toFixed(1)}%</div>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="text-xs font-medium text-green-700 mb-1">⭐ 적정 (목표)</div>
-                                        <div class="text-sm font-bold text-green-700">${data.speed.distribution[2]}명</div>
-                                        <div class="text-xs text-green-600">${((data.speed.distribution[2]/data.respondents)*100).toFixed(1)}%</div>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="text-xs font-medium text-gray-600 mb-1">빠름</div>
-                                        <div class="text-sm font-bold text-gray-700">${data.speed.distribution[3]}명</div>
-                                        <div class="text-xs text-gray-500">${((data.speed.distribution[3]/data.respondents)*100).toFixed(1)}%</div>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="text-xs font-medium text-gray-600 mb-1">매우 빠름</div>
-                                        <div class="text-sm font-bold text-gray-700">${data.speed.distribution[4]}명</div>
-                                        <div class="text-xs text-gray-500">${((data.speed.distribution[4]/data.respondents)*100).toFixed(1)}%</div>
+                                    <div class="flex justify-between text-xs text-gray-500 px-16">
+                                        <span>1점</span>
+                                        <span>2점</span>
+                                        <span class="font-bold text-green-700">3점(적정)</span>
+                                        <span>4점</span>
+                                        <span>5점</span>
                                     </div>
                                 </div>
                                 
-                                <!-- 통합 막대 그래프 -->
-                                <div class="w-full h-8 flex rounded-lg overflow-hidden border-2 border-gray-300">
-                                    ${data.speed.distribution[0] > 0 ? `<div class="bg-blue-400 flex items-center justify-center text-white text-xs font-bold" style="width: ${((data.speed.distribution[0]/data.respondents)*100)}%">${data.speed.distribution[0] > 0 ? data.speed.distribution[0] : ''}</div>` : ''}
-                                    ${data.speed.distribution[1] > 0 ? `<div class="bg-blue-300 flex items-center justify-center text-white text-xs font-bold" style="width: ${((data.speed.distribution[1]/data.respondents)*100)}%">${data.speed.distribution[1] > 0 ? data.speed.distribution[1] : ''}</div>` : ''}
-                                    ${data.speed.distribution[2] > 0 ? `<div class="bg-green-500 flex items-center justify-center text-white text-xs font-bold" style="width: ${((data.speed.distribution[2]/data.respondents)*100)}%">${data.speed.distribution[2]}</div>` : ''}
-                                    ${data.speed.distribution[3] > 0 ? `<div class="bg-red-300 flex items-center justify-center text-white text-xs font-bold" style="width: ${((data.speed.distribution[3]/data.respondents)*100)}%">${data.speed.distribution[3] > 0 ? data.speed.distribution[3] : ''}</div>` : ''}
-                                    ${data.speed.distribution[4] > 0 ? `<div class="bg-red-500 flex items-center justify-center text-white text-xs font-bold" style="width: ${((data.speed.distribution[4]/data.respondents)*100)}%">${data.speed.distribution[4] > 0 ? data.speed.distribution[4] : ''}</div>` : ''}
+                                <div class="text-sm text-gray-700">
+                                    <span class="font-medium">응답 분포:</span> 매우 느림(${((data.speed.distribution[0]/data.respondents)*100).toFixed(1)}%) | 느림(${((data.speed.distribution[1]/data.respondents)*100).toFixed(1)}%) | 적정(${((data.speed.distribution[2]/data.respondents)*100).toFixed(1)}%) | 빠름(${((data.speed.distribution[3]/data.respondents)*100).toFixed(1)}%) | 매우 빠름(${((data.speed.distribution[4]/data.respondents)*100).toFixed(1)}%)
                                 </div>
                             </div>
-                            
-                            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                            <div class="mt-3 bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
                                 <p class="text-sm text-blue-900">
-                                    <strong>평가:</strong> 교육생의 ${speedPercent}%가 '적정'으로 응답하여 매우 우수한 페이스 조절을 보여주셨습니다.
+                                    <strong>평가:</strong> 평균 ${data.speed.avg.toFixed(1)}점으로 '적정' 구간에 위치하며, 교육생의 ${speedPercent}%가 '적정'으로 응답하여 매우 우수한 페이스 조절을 보여주셨습니다.
                                 </p>
                             </div>
                         </div>
@@ -434,51 +385,43 @@
                         <!-- 난이도 -->
                         <div>
                             <h4 class="text-lg font-semibold text-gray-700 mb-3">2. 강의 난이도 적정성</h4>
-                            
-                            <!-- 응답 분포 시각화 (통합 막대) -->
-                            <div class="bg-gray-50 rounded-lg p-5 mb-3">
-                                <!-- 라벨과 수치 -->
-                                <div class="grid grid-cols-5 gap-2 mb-2">
-                                    <div class="text-center">
-                                        <div class="text-xs font-medium text-gray-600 mb-1">매우 쉬움</div>
-                                        <div class="text-sm font-bold text-gray-700">${data.difficulty.distribution[0]}명</div>
-                                        <div class="text-xs text-gray-500">${((data.difficulty.distribution[0]/data.respondents)*100).toFixed(1)}%</div>
+                            <div class="bg-gray-50 rounded-lg p-4 space-y-4">
+                                <!-- 시각적 막대 그래프 -->
+                                <div class="relative">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="text-xs text-gray-500 w-16">매우 쉬움</span>
+                                        <div class="flex-1 h-8 rounded-lg relative overflow-hidden" style="background: linear-gradient(to right, #3b82f6 0%, #60a5fa 20%, #22c55e 40%, #22c55e 60%, #fb923c 80%, #ef4444 100%);">
+                                            <div class="absolute inset-0 flex">
+                                                <div style="width: 20%" class="border-r-2 border-white"></div>
+                                                <div style="width: 20%" class="border-r-2 border-white"></div>
+                                                <div style="width: 20%" class="border-r-2 border-white"></div>
+                                                <div style="width: 20%" class="border-r-2 border-white"></div>
+                                                <div style="width: 20%"></div>
+                                            </div>
+                                            <!-- 점수 마커 -->
+                                            <div style="position: absolute; left: ${((data.difficulty.avg - 1) / 4) * 100}%; top: 0; bottom: 0; width: 3px; background: #1e40af; z-index: 10;">
+                                                <div style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 8px solid #1e40af;"></div>
+                                                <div style="position: absolute; top: -28px; left: 50%; transform: translateX(-50%); background: #1e40af; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; white-space: nowrap;">${data.difficulty.avg.toFixed(1)}점</div>
+                                            </div>
+                                        </div>
+                                        <span class="text-xs text-gray-500 w-16 text-right">매우 어려움</span>
                                     </div>
-                                    <div class="text-center">
-                                        <div class="text-xs font-medium text-gray-600 mb-1">쉬움</div>
-                                        <div class="text-sm font-bold text-gray-700">${data.difficulty.distribution[1]}명</div>
-                                        <div class="text-xs text-gray-500">${((data.difficulty.distribution[1]/data.respondents)*100).toFixed(1)}%</div>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="text-xs font-medium text-green-700 mb-1">⭐ 적정 (목표)</div>
-                                        <div class="text-sm font-bold text-green-700">${data.difficulty.distribution[2]}명</div>
-                                        <div class="text-xs text-green-600">${((data.difficulty.distribution[2]/data.respondents)*100).toFixed(1)}%</div>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="text-xs font-medium text-gray-600 mb-1">어려움</div>
-                                        <div class="text-sm font-bold text-gray-700">${data.difficulty.distribution[3]}명</div>
-                                        <div class="text-xs text-gray-500">${((data.difficulty.distribution[3]/data.respondents)*100).toFixed(1)}%</div>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="text-xs font-medium text-gray-600 mb-1">매우 어려움</div>
-                                        <div class="text-sm font-bold text-gray-700">${data.difficulty.distribution[4]}명</div>
-                                        <div class="text-xs text-gray-500">${((data.difficulty.distribution[4]/data.respondents)*100).toFixed(1)}%</div>
+                                    <div class="flex justify-between text-xs text-gray-500 px-16">
+                                        <span>1점</span>
+                                        <span>2점</span>
+                                        <span class="font-bold text-green-700">3점(적정)</span>
+                                        <span>4점</span>
+                                        <span>5점</span>
                                     </div>
                                 </div>
                                 
-                                <!-- 통합 막대 그래프 -->
-                                <div class="w-full h-8 flex rounded-lg overflow-hidden border-2 border-gray-300">
-                                    ${data.difficulty.distribution[0] > 0 ? `<div class="bg-blue-400 flex items-center justify-center text-white text-xs font-bold" style="width: ${((data.difficulty.distribution[0]/data.respondents)*100)}%">${data.difficulty.distribution[0] > 0 ? data.difficulty.distribution[0] : ''}</div>` : ''}
-                                    ${data.difficulty.distribution[1] > 0 ? `<div class="bg-blue-300 flex items-center justify-center text-white text-xs font-bold" style="width: ${((data.difficulty.distribution[1]/data.respondents)*100)}%">${data.difficulty.distribution[1] > 0 ? data.difficulty.distribution[1] : ''}</div>` : ''}
-                                    ${data.difficulty.distribution[2] > 0 ? `<div class="bg-green-500 flex items-center justify-center text-white text-xs font-bold" style="width: ${((data.difficulty.distribution[2]/data.respondents)*100)}%">${data.difficulty.distribution[2]}</div>` : ''}
-                                    ${data.difficulty.distribution[3] > 0 ? `<div class="bg-red-300 flex items-center justify-center text-white text-xs font-bold" style="width: ${((data.difficulty.distribution[3]/data.respondents)*100)}%">${data.difficulty.distribution[3] > 0 ? data.difficulty.distribution[3] : ''}</div>` : ''}
-                                    ${data.difficulty.distribution[4] > 0 ? `<div class="bg-red-500 flex items-center justify-center text-white text-xs font-bold" style="width: ${((data.difficulty.distribution[4]/data.respondents)*100)}%">${data.difficulty.distribution[4] > 0 ? data.difficulty.distribution[4] : ''}</div>` : ''}
+                                <div class="text-sm text-gray-700">
+                                    <span class="font-medium">응답 분포:</span> 매우 쉬움(${((data.difficulty.distribution[0]/data.respondents)*100).toFixed(1)}%) | 쉬움(${((data.difficulty.distribution[1]/data.respondents)*100).toFixed(1)}%) | 적정(${((data.difficulty.distribution[2]/data.respondents)*100).toFixed(1)}%) | 어려움(${((data.difficulty.distribution[3]/data.respondents)*100).toFixed(1)}%) | 매우 어려움(${((data.difficulty.distribution[4]/data.respondents)*100).toFixed(1)}%)
                                 </div>
                             </div>
-                            
-                            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                            <div class="mt-3 bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
                                 <p class="text-sm text-blue-900">
-                                    <strong>평가:</strong> 전체의 ${diffPercent}%가 적정 난이도로 평가했으며, 일부 교육생은 약간 쉽거나 어렵다고 느낀 것으로 보입니다.
+                                    <strong>평가:</strong> 평균 ${data.difficulty.avg.toFixed(1)}점으로 '적정' 구간에 위치하며, 전체의 ${diffPercent}%가 적정 난이도로 평가했습니다.
                                 </p>
                             </div>
                         </div>
@@ -575,6 +518,10 @@
                         <p class="text-indigo-600 font-semibold mt-4">남은 강의도 좋은 결과 있으시길 바랍니다.</p>
                         <p class="text-gray-500 mt-2">감사합니다.</p>
                     </div>
+                </div>
+
+                <div class="mt-6 text-sm text-gray-600 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                    💡 위 버튼을 클릭하거나 Ctrl+P (Mac: Cmd+P)로 PDF 저장하실 수 있습니다.
                 </div>
             `;
 
